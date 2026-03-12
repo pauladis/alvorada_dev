@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getOrCreateConversation, createInboundMessage, enqueueMessageProcessing } from '../services/messageService';
 import { processMessage } from '../services/messageProcessor';
+import { validateWebhookPayload } from '../validators';
 
 const router = Router();
 
@@ -19,10 +20,17 @@ router.post('/sms', async (req: Request, res: Response) => {
   try {
     const { MessageSid, From, Body } = req.body as TwilioWebhookPayload;
 
-    // Validate payload
-    if (!MessageSid || !From || !Body) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    // Validate webhook payload
+    const validation = validateWebhookPayload(MessageSid, From, Body);
+    if (!validation.valid) {
+      return res.status(400).json({ 
+        error: 'Validation failed',
+        details: validation.errors 
+      });
     }
+
+    // Auto-generate MessageSid if not provided
+    const finalMessageSid = MessageSid || `SM_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // Return 200 OK immediately (within 5 seconds) to acknowledge webhook
     res.status(200).json({ status: 'received' });
@@ -34,13 +42,13 @@ router.post('/sms', async (req: Request, res: Response) => {
         const conversation = await getOrCreateConversation(From);
 
         // Create inbound message record
-        const message = await createInboundMessage(conversation.id, Body, MessageSid);
+        const message = await createInboundMessage(conversation.id, Body, finalMessageSid);
 
         // Enqueue for processing
-        await enqueueMessageProcessing(message.id, conversation.id, From, Body, MessageSid);
+        await enqueueMessageProcessing(message.id, conversation.id, From, Body, finalMessageSid);
 
         // Start processing
-        await processMessage(message.id, conversation.id, From, Body, MessageSid, 0);
+        await processMessage(message.id, conversation.id, From, Body, finalMessageSid, 0);
       } catch (error) {
         console.error('Error processing webhook:', error);
       }
