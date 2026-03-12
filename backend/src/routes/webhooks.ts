@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { getOrCreateConversation, createInboundMessage, enqueueMessageProcessing } from '../services/messageService';
 import { processMessage } from '../services/messageProcessor';
 import { validateWebhookPayload } from '../validators';
+import { logger } from '../services/logger';
 
 const router = Router();
 
@@ -38,6 +39,8 @@ router.post('/sms', async (req: Request, res: Response) => {
     // Process asynchronously in background
     setImmediate(async () => {
       try {
+        logger.logWebhookReceived(finalMessageSid, From);
+        
         // Get or create conversation
         const conversation = await getOrCreateConversation(From);
 
@@ -46,15 +49,18 @@ router.post('/sms', async (req: Request, res: Response) => {
 
         // Enqueue for processing
         await enqueueMessageProcessing(message.id, conversation.id, From, Body, finalMessageSid);
+        logger.logMessageEnqueued(message.id, conversation.id, 1);
 
         // Start processing
         await processMessage(message.id, conversation.id, From, Body, finalMessageSid, 0);
       } catch (error) {
-        console.error('Error processing webhook:', error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.logEvent('WEBHOOK_ERROR', { from: From, error: errorMsg }, 'error');
       }
     });
   } catch (error) {
-    console.error('Webhook error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    logger.logEvent('WEBHOOK_PARSE_ERROR', { error: errorMsg }, 'error');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

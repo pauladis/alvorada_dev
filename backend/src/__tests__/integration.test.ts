@@ -3,6 +3,7 @@ import app from '../index';
 import { initializeDatabase, closeDatabase, db } from '../db';
 import { conversations, messages, messageStates, dlqMessages } from '../db/schema';
 import { v4 as uuid } from 'uuid';
+import { eq } from 'drizzle-orm';
 import path from 'path';
 import fs from 'fs';
 
@@ -78,11 +79,11 @@ describe('SMS System Integration Tests', () => {
       // Wait for async processing
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const conversation = db.select().from(conversations).where(conversations.phoneNumber.equals(phoneNumber)).all()[0];
+      const conversation = db.select().from(conversations).where(eq(conversations.phoneNumber, phoneNumber)).all()[0];
       expect(conversation).toBeDefined();
       expect(conversation.phoneNumber).toBe(phoneNumber);
 
-      const message = db.select().from(messages).where(messages.conversationId.equals(conversation.id)).all()[0];
+      const message = db.select().from(messages).where(eq(messages.conversationId, conversation.id)).all()[0];
       expect(message).toBeDefined();
       expect(message.content).toBe(messageBody);
       expect(message.direction).toBe('inbound');
@@ -122,7 +123,7 @@ describe('SMS System Integration Tests', () => {
       const inboundMessages = db
         .select()
         .from(messages)
-        .where(messages.direction.equals('inbound'))
+        .where(eq(messages.direction, 'inbound'))
         .all();
       expect(inboundMessages).toHaveLength(1);
     });
@@ -130,6 +131,7 @@ describe('SMS System Integration Tests', () => {
 
   describe('Message Processing', () => {
     it('should process message and send response', async () => {
+      jest.setTimeout(25000);
       const phoneNumber = '+11234567890';
       const messageBody = 'Test processing';
 
@@ -144,8 +146,8 @@ describe('SMS System Integration Tests', () => {
       // Wait for processing (up to 15 seconds)
       await new Promise(resolve => setTimeout(resolve, 18000));
 
-      const conversation = db.select().from(conversations).where(conversations.phoneNumber.equals(phoneNumber)).all()[0];
-      const allMessages = db.select().from(messages).where(messages.conversationId.equals(conversation.id)).all();
+      const conversation = db.select().from(conversations).where(eq(conversations.phoneNumber, phoneNumber)).all()[0];
+      const allMessages = db.select().from(messages).where(eq(messages.conversationId, conversation.id)).all();
 
       // Should have inbound and outbound message
       expect(allMessages).toHaveLength(2);
@@ -157,10 +159,13 @@ describe('SMS System Integration Tests', () => {
       expect(outbound).toBeDefined();
       expect(inbound!.status).toBe('sent');
       expect(outbound!.status).toBe('sent');
-      expect(outbound!.content).toContain('Message received and processed');
+      // Smart response should be generated (not hardcoded echo)
+      expect(outbound!.content).toBeDefined();
+      expect(outbound!.content.length).toBeGreaterThan(0);
     });
 
     it('should mark message as processed for idempotency', async () => {
+      jest.setTimeout(25000);
       const phoneNumber = '+11234567890';
       const messageBody = 'Test idempotency';
       const messageSid = 'SM_IDEMPOTENT';
@@ -179,7 +184,7 @@ describe('SMS System Integration Tests', () => {
       const messageState = db
         .select()
         .from(messageStates)
-        .where(messageStates.twilioMessageId.equals(messageSid))
+        .where(eq(messageStates.twilioMessageId, messageSid))
         .all()[0];
 
       expect(messageState).toBeDefined();
@@ -219,7 +224,7 @@ describe('SMS System Integration Tests', () => {
         .run();
 
       // Verify message created with retry count 0
-      const message = db.select().from(messages).where(messages.id.equals(messageId)).all()[0];
+      const message = db.select().from(messages).where(eq(messages.id, messageId)).all()[0];
       expect(message.retryCount).toBe(0);
     });
   });
@@ -267,7 +272,7 @@ describe('SMS System Integration Tests', () => {
         })
         .run();
 
-      const dlqEntry = db.select().from(dlqMessages).where(dlqMessages.messageId.equals(messageId)).all()[0];
+      const dlqEntry = db.select().from(dlqMessages).where(eq(dlqMessages.messageId, messageId)).all()[0];
       expect(dlqEntry).toBeDefined();
       expect(dlqEntry.reason).toBe('Max retries exceeded');
     });
@@ -407,8 +412,8 @@ describe('SMS System Integration Tests', () => {
       expect(conv1).toBeDefined();
       expect(conv2).toBeDefined();
 
-      const messages1 = db.select().from(messages).where(messages.conversationId.equals(conv1!.id)).all();
-      const messages2 = db.select().from(messages).where(messages.conversationId.equals(conv2!.id)).all();
+      const messages1 = db.select().from(messages).where(eq(messages.conversationId, conv1!.id)).all();
+      const messages2 = db.select().from(messages).where(eq(messages.conversationId, conv2!.id)).all();
 
       expect(messages1).toHaveLength(1);
       expect(messages2).toHaveLength(1);

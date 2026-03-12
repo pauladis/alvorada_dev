@@ -3,6 +3,8 @@ import { db } from '../db';
 import { messages, dlqMessages, messageStates } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { twilioService } from './twilio';
+import { generateSmartResponse, analyzeSentiment } from './responseGenerator';
+import { logger } from './logger';
 
 const MAX_RETRIES = 1;
 
@@ -14,13 +16,18 @@ export async function processMessage(
   twilioMessageId: string,
   retryCount: number = 0
 ): Promise<void> {
+  const startTime = Date.now();
+
   try {
     // Check if already processed (idempotency)
     const existingState = db.select().from(messageStates).where(eq(messageStates.twilioMessageId, twilioMessageId)).all()[0];
     if (existingState && existingState.processed) {
-      console.log(`Message ${twilioMessageId} already processed, skipping`);
+      logger.logIdempotencySkip(twilioMessageId, messageId);
       return;
     }
+
+    // Analyze sentiment
+    const sentiment = analyzeSentiment(content);
 
     // Update message status to processing
     await db
@@ -33,14 +40,17 @@ export async function processMessage(
     const delay = Math.random() * 12000 + 3000;
     await new Promise(resolve => setTimeout(resolve, delay));
 
-    // Generate bot response
-    const responseContent = `Message received and processed: "${content}"`;
+    // Generate smart response
+    const smartResponse = generateSmartResponse(content);
+    const responseContent = smartResponse.content;
 
     // Send outbound SMS
     const twilioResult = await twilioService.sendSMS({
       to: phoneNumber,
       body: responseContent,
     });
+
+    logger.logSMSSent(messageId, phoneNumber, responseContent.length, twilioResult.sid);
 
     // Create outbound message record
     const outboundMessageId = uuid();
@@ -77,15 +87,23 @@ export async function processMessage(
       })
       .run();
 
-    console.log(`Message ${messageId} processed successfully`);
+    const processingTime = Date.now() - startTime;
+    logger.logProcessingMetrics({
+      messageId,
+      conversationId,
+      processingTime,
+      status: 'success',
+      category: smartResponse.category,
+      sentiment,
+    });
   } catch (error) {
-    console.error(`Error processing message ${messageId}:`, error);
-
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const processingTime = Date.now() - startTime;
 
     if (retryCount < MAX_RETRIES) {
       // Retry
-      console.log(`Retrying message ${messageId} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      logger.logRetry(messageId, conversationId, retryCount + 1, MAX_RETRIES, errorMessage);
+      
       await db
         .update(messages)
         .set({ retryCount: retryCount + 1, updatedAt: Date.now() })
@@ -96,7 +114,17 @@ export async function processMessage(
       await processMessage(messageId, conversationId, phoneNumber, content, twilioMessageId, retryCount + 1);
     } else {
       // Move to DLQ
-      console.log(`Message ${messageId} failed, moving to DLQ`);
+      logger.logDLQMove(messageId, conversationId, 'Max retries exceeded', retryCount + 1, errorMessage);
+      
+      logger.logProcessingMetrics({
+        messageId,
+        conversationId,
+        processingTime,
+        status: 'dlq',
+        retryCount: retryCount + 1,
+        error: errorMessage,
+      });
+
       await db
         .update(messages)
         .set({ status: 'failed', updatedAt: Date.now() })
