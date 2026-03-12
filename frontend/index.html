@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SMS Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background-color: #34495e;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-btn:hover {
+            background-color: #2c3e50;
+        }
+
+        .nav-btn.active {
+            background-color: #3498db;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .view {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 15px;
+        }
+
+        .view-header h2 {
+            flex: 1;
+        }
+
+        .btn-primary, .btn-back {
+            padding: 8px 16px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-back {
+            background-color: #7f8c8d;
+            margin-right: 10px;
+        }
+
+        .btn-back:hover {
+            background-color: #5d6d7b;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 40px 20px;
+            font-size: 16px;
+        }
+
+        .conversation-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .conversation-card {
+            padding: 15px;
+            border: 1px solid #ecf0f1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #fafafa;
+        }
+
+        .conversation-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .conversation-card h3 {
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .timestamp {
+            color: #95a5a6;
+            font-size: 12px;
+        }
+
+        .conversation-info {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .conversation-info p {
+            margin: 8px 0;
+            color: #2c3e50;
+        }
+
+        .messages-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            background-color: #ecf0f1;
+        }
+
+        .message.inbound {
+            border-left-color: #27ae60;
+            background-color: #d5f4e6;
+        }
+
+        .message.outbound {
+            border-left-color: #3498db;
+            background-color: #d6eaf8;
+        }
+
+        .message.status-failed {
+            border-left-color: #e74c3c;
+            background-color: #fadbd8;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .message .direction {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .message .status {
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .message .content {
+            margin: 8px 0;
+            color: #2c3e50;
+            word-wrap: break-word;
+        }
+
+        .message .timestamp {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .dlq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dlq-item {
+            padding: 15px;
+            border: 1px solid #e74c3c;
+            border-radius: 6px;
+            background-color: #fadbd8;
+        }
+
+        .dlq-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .dlq-header h4 {
+            color: #c0392b;
+            font-size: 14px;
+        }
+
+        .dlq-item .reason {
+            background-color: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .dlq-item p {
+            margin: 8px 0;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>SMS Admin Dashboard</h1>
+        <nav class="nav">
+            <button class="nav-btn active" onclick="switchView('conversations')">Conversations</button>
+            <button class="nav-btn" onclick="switchView('dlq')">DLQ (<span id="dlq-count">0</span>)</button>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div id="conversations-view" class="view active">
+            <div class="view-header">
+                <h2>Conversations</h2>
+                <button class="btn-primary" onclick="loadConversations()">Refresh</button>
+            </div>
+            <div id="conversations-content"></div>
+        </div>
+
+        <div id="detail-view" class="view">
+            <div class="view-header">
+                <button class="btn-back" onclick="switchView('conversations')">← Back</button>
+                <h2 id="detail-phone"></h2>
+                <button class="btn-primary" onclick="loadDetailView()">Refresh</button>
+            </div>
+            <div class="conversation-info">
+                <p><strong>Phone:</strong> <span id="detail-phone-info"></span></p>
+                <p><strong>Created:</strong> <span id="detail-created"></span></p>
+            </div>
+            <div id="messages-content"></div>
+        </div>
+
+        <div id="dlq-view" class="view">
+            <div class="view-header">
+                <h2>Dead Letter Queue</h2>
+                <button class="btn-primary" onclick="loadDLQ()">Refresh</button>
+            </div>
+            <div id="dlq-content"></div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let currentConversation = null;
+
+        function switchView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            if (view === 'conversations') {
+                document.getElementById('conversations-view').classList.add('active');
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+                loadConversations();
+            } else if (view === 'dlq') {
+                document.getElementById('dlq-view').classList.add('active');
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+                loadDLQ();
+            }
+        }
+
+        async function loadConversations() {
+            try {
+                const response = await fetch(`${API_URL}/conversations`);
+                const conversations = await response.json();
+                
+                const content = document.getElementById('conversations-content');
+                if (conversations.length === 0) {
+                    content.innerHTML = '<p class="empty-state">No conversations yet</p>';
+                } else {
+                    content.innerHTML = '<div class="conversation-list">' +
+                        conversations.map(conv => `
+                            <div class="conversation-card" onclick="viewConversation('${conv.id}', '${conv.phoneNumber}')">
+                                <h3>${conv.phoneNumber}</h3>
+                                <p class="timestamp">${new Date(conv.createdAt).toLocaleString()}</p>
+                            </div>
+                        `).join('') +
+                        '</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('conversations-content').innerHTML = '<p class="empty-state">Error loading conversations</p>';
+            }
+        }
+
+        async function viewConversation(id, phone) {
+            currentConversation = { id, phone };
+            document.getElementById('detail-phone').textContent = phone;
+            document.getElementById('detail-phone-info').textContent = phone;
+            document.getElementById('detail-created').textContent = new Date().toLocaleString();
+            document.getElementById('detail-view').classList.add('active');
+            document.getElementById('conversations-view').classList.remove('active');
+            document.querySelectorAll('.nav-btn')[0].classList.remove('active');
+            await loadDetailView();
+        }
+
+        async function loadDetailView() {
+            if (!currentConversation) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/conversations/${currentConversation.id}/messages`);
+                const messages = await response.json();
+                
+                const content = document.getElementById('messages-content');
+                if (messages.length === 0) {
+                    content.innerHTML = '<p class="empty-state">No messages in this conversation</p>';
+                } else {
+                    content.innerHTML = '<div class="messages-list">' +
+                        messages.map(msg => `
+                            <div class="message ${msg.direction} status-${msg.status}">
+                                <div class="message-header">
+                                    <span class="direction">${msg.direction === 'inbound' ? '📱 Inbound' : '📤 Outbound'}</span>
+                                    <span class="status">${msg.status}</span>
+                                </div>
+                                <p class="content">${escapeHtml(msg.content)}</p>
+                                <p class="timestamp">${new Date(msg.createdAt).toLocaleString()}</p>
+                            </div>
+                        `).join('') +
+                        '</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('messages-content').innerHTML = '<p class="empty-state">Error loading messages</p>';
+            }
+        }
+
+        async function loadDLQ() {
+            try {
+                const response = await fetch(`${API_URL}/dlq`);
+                const dlqMessages = await response.json();
+                
+                document.getElementById('dlq-count').textContent = dlqMessages.length;
+                
+                const content = document.getElementById('dlq-content');
+                if (dlqMessages.length === 0) {
+                    content.innerHTML = '<p class="empty-state">No messages in DLQ</p>';
+                } else {
+                    content.innerHTML = '<div class="dlq-list">' +
+                        dlqMessages.map(msg => `
+                            <div class="dlq-item">
+                                <div class="dlq-header">
+                                    <h4>Message ID: ${msg.messageId.substring(0, 8)}...</h4>
+                                    <span class="reason">${msg.reason}</span>
+                                </div>
+                                <p><strong>Failed Attempts:</strong> ${msg.failedAttempts}</p>
+                                ${msg.lastError ? `<p><strong>Last Error:</strong> ${escapeHtml(msg.lastError)}</p>` : ''}
+                                <p class="timestamp">Added: ${new Date(msg.createdAt).toLocaleString()}</p>
+                            </div>
+                        `).join('') +
+                        '</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('dlq-content').innerHTML = '<p class="empty-state">Error loading DLQ</p>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        window.addEventListener('load', () => {
+            loadConversations();
+        });
+    </script>
+</body>
+</html>

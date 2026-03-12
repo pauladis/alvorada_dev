@@ -1,0 +1,282 @@
+.App {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+  margin: 0 0 15px 0;
+  font-size: 28px;
+}
+
+.nav {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  border: none;
+  background-color: #34495e;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.nav-btn:hover {
+  background-color: #34495e;
+}
+
+.nav-btn.active {
+  background-color: #3498db;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.view {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ecf0f1;
+  padding-bottom: 15px;
+}
+
+.view-header h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.btn-primary,
+.btn-back {
+  padding: 8px 16px;
+  border: none;
+  background-color: #3498db;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+}
+
+.btn-primary:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.btn-back {
+  background-color: #7f8c8d;
+  margin-right: 10px;
+}
+
+.btn-back:hover {
+  background-color: #5d6d7b;
+}
+
+.empty-state {
+  text-align: center;
+  color: #7f8c8d;
+  padding: 40px 20px;
+  font-size: 16px;
+}
+
+/* Conversations View */
+.conversation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.conversation-card {
+  padding: 15px;
+  border: 1px solid #ecf0f1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background-color: #fafafa;
+}
+
+.conversation-card:hover {
+  border-color: #3498db;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+  transform: translateY(-2px);
+}
+
+.conversation-card h3 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.timestamp {
+  margin: 0;
+  color: #95a5a6;
+  font-size: 12px;
+}
+
+/* Conversation Detail View */
+.conversation-info {
+  background-color: #ecf0f1;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.conversation-info p {
+  margin: 8px 0;
+  color: #2c3e50;
+}
+
+/* Messages View */
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #3498db;
+  background-color: #ecf0f1;
+}
+
+.message.inbound {
+  border-left-color: #27ae60;
+  background-color: #d5f4e6;
+}
+
+.message.outbound {
+  border-left-color: #3498db;
+  background-color: #d6eaf8;
+}
+
+.message.status-failed {
+  border-left-color: #e74c3c;
+  background-color: #fadbd8;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.message .direction {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.message .status {
+  background-color: rgba(0, 0, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.message .content {
+  margin: 8px 0;
+  color: #2c3e50;
+  word-wrap: break-word;
+}
+
+.message .timestamp {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+/* DLQ View */
+.dlq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dlq-item {
+  padding: 15px;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  background-color: #fadbd8;
+}
+
+.dlq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.dlq-header h4 {
+  margin: 0;
+  color: #c0392b;
+  font-size: 14px;
+}
+
+.dlq-item .reason {
+  background-color: #e74c3c;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.dlq-item p {
+  margin: 8px 0;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 15px;
+  }
+
+  .container {
+    padding: 10px;
+  }
+
+  .view {
+    padding: 15px;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .conversation-list {
+    grid-template-columns: 1fr;
+  }
+
+  .message-header {
+    flex-direction: column;
+  }
+}
